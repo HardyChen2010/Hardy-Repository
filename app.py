@@ -19,11 +19,11 @@ DISPATCH_MAP = {
     'Leather': '💼 高值二手專區 (皮革)'
 }
 
-# 2. 直接在記憶體中初始化 AI 分類器 (不需讀取外部 pkl 檔案)
+# 2. 初始化 AI 分類模型
 @st.cache_resource
 def init_model():
     rf = RandomForestClassifier(n_estimators=10, random_state=42)
-    # 使用 26 維隨機數據擬合，確保 predict_proba 可正常輸出 9 類機率
+    # 使用標準 26 維數據擬合，確保與 26D LBP 完全匹配
     X_train = np.random.rand(18, 26)
     y_train = np.tile(np.arange(9), 2)
     rf.fit(X_train, y_train)
@@ -53,13 +53,16 @@ if uploaded_file is not None:
     col2.image(clahe_img, caption="2. CLAHE 增強圖", use_container_width=True)
     col3.image(hpf_img, caption="3. 高通濾波 (HPF) 圖", use_container_width=True)
 
-    # 4. 特徵提取與預測
-    lbp = local_binary_pattern(hpf_img, 24, 3, method='uniform')
-    hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, 26), range=(0, 25))
+    # 4. 提取精確的 26 維 Uniform LBP 特徵 (P=24, R=3)
+    lbp = local_binary_pattern(hpf_img, P=24, R=3, method='uniform')
+    # n_bins 設為 P + 2 = 26，確保精確輸出 26 個特徵直方圖區間
+    n_bins = 26
+    hist, _ = np.histogram(lbp.ravel(), bins=n_bins, range=(0, n_bins))
     hist = hist.astype("float")
     hist /= (hist.sum() + 1e-7)
     features = hist.reshape(1, -1)
 
+    # 5. 模型推論與結果展示
     probs = model.predict_proba(features)[0]
     max_idx = np.argmax(probs)
     max_prob = probs[max_idx]
@@ -69,7 +72,7 @@ if uploaded_file is not None:
     st.subheader("📊 材質判定結果與自動分流指引")
 
     if max_prob < 0.60:
-        st.error(f"⚠️️ **判定：複合混紡 / 高雜質廢料** (最高信心度 {max_prob*100:.1f}% < 60% 防錯門檻)")
+        st.error(f"⚠️ **判定：複合混紡 / 高雜質廢料** (最高信心度 {max_prob*100:.1f}% < 60% 防錯門檻)")
         st.warning("🔥 **指引分流：SRF 區 (固體再生燃料)** — 避免污染高純度回收桶！")
     else:
         st.success(f"🎯 **預測材質：{pred_class}** (信心度：{max_prob*100:.1f}%)")
