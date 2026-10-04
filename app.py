@@ -92,3 +92,16 @@ if uploaded_file is not None:
     ax.set_xlabel('Probability (%)')
     ax.set_title('9 Class Material Confidence Distribution')
     st.pyplot(fig)
+# 載入模型 (增加保護與路徑除錯)
+@st.cache_resource
+def load_model():
+    try:
+        return joblib.load('fabric_lbp_rf_9classes.pkl')
+    except Exception as e:
+        return None
+
+model = load_model()
+
+if model is None:
+    st.error("❌ 模型檔載入失敗！請確認 GitHub 專案目錄下是否有 `fabric_lbp_rf_9classes.pkl` 檔案。")
+    st.stop()  # 停止執行後續程式，避免 AttributeError
