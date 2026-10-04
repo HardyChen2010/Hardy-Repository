@@ -4,22 +4,33 @@ import numpy as np
 import joblib
 from skimage.feature import local_binary_pattern
 import matplotlib.pyplot as plt
+import os
 
 # 1. 頁面標題與佈局設定
 st.set_page_config(page_title="Edge-AI 舊衣材質智慧分類系統", layout="wide")
 st.title("🧵 基於微觀紋理特徵之輕量化 Edge-AI 舊衣材質分類與源頭分流系統")
 st.write("結合 26D Uniform LBP 紋理特徵工程與隨機森林演算法")
 
-# 2. 載入訓練好的模型
+# 2. 載入模型 (含自動檢查機制)
+MODEL_FILE = 'fabric_lbp_rf_9classes.pkl'
+
 @st.cache_resource
 def load_model():
-    return joblib.load('fabric_lbp_rf_9classes.pkl')
+    if not os.path.exists(MODEL_FILE):
+        return None
+    try:
+        return joblib.load(MODEL_FILE)
+    except Exception:
+        return None
 
-try:
-    model = load_model()
+model = load_model()
+
+# 若找不到模型，顯示明確警告訊息，防止程式當掉
+if model is None:
+    st.error(f"❌ 找不到模型檔案 `{MODEL_FILE}`！請確認此 `.pkl` 檔已上傳至 GitHub 儲存庫根目錄中。")
+    st.stop()
+else:
     st.sidebar.success("✅ 模型載入成功！")
-except Exception as e:
-    st.sidebar.error("❌ 模型檔載入失敗，請確認 fabric_lbp_rf_9classes.pkl 是否在同目錄下。")
 
 # 3. 定義 9 大材質與三大高值化分流管道
 CLASSES = ['Cotton', 'Linen', 'Wool', 'Silk', 'Denim', 'Polyester', 'Nylon', 'Acrylic', 'Leather']
@@ -92,16 +103,3 @@ if uploaded_file is not None:
     ax.set_xlabel('Probability (%)')
     ax.set_title('9 Class Material Confidence Distribution')
     st.pyplot(fig)
-# 載入模型 (增加保護與路徑除錯)
-@st.cache_resource
-def load_model():
-    try:
-        return joblib.load('fabric_lbp_rf_9classes.pkl')
-    except Exception as e:
-        return None
-
-model = load_model()
-
-if model is None:
-    st.error("❌ 模型檔載入失敗！請確認 GitHub 專案目錄下是否有 `fabric_lbp_rf_9classes.pkl` 檔案。")
-    st.stop()  # 停止執行後續程式，避免 AttributeError
