@@ -11,7 +11,7 @@ st.set_page_config(page_title="Edge-AI 舊衣材質智慧分類系統", layout="
 st.title("🧵 基於微觀紋理特徵之輕量化 Edge-AI 舊衣材質分類與源頭分流系統")
 st.write("結合 26D Uniform LBP 紋理特徵工程與隨機森林演算法")
 
-# 2. 載入模型 (含自動檢查機制)
+# 2. 載入模型 (檔名已修正為全小寫 fabric_lbp_rf_9classes.pkl)
 MODEL_FILE = 'fabric_lbp_rf_9classes.pkl'
 
 @st.cache_resource
@@ -25,7 +25,7 @@ def load_model():
 
 model = load_model()
 
-# 若找不到模型，顯示明確警告訊息，防止程式當掉
+# 若模型載入失敗，顯示警告並停止執行
 if model is None:
     st.error(f"❌ 找不到模型檔案 `{MODEL_FILE}`！請確認此 `.pkl` 檔已上傳至 GitHub 儲存庫根目錄中。")
     st.stop()
@@ -67,9 +67,9 @@ if uploaded_file is not None:
     # 顯示三階段影像處理結果
     st.subheader("🖼️ 三階段影像預處理與特徵增強")
     col1, col2, col3 = st.columns(3)
-    col1.image(gray, caption="1. 原始灰階圖", use_column_width=True)
-    col2.image(clahe_img, caption="2. CLAHE 增強圖", use_column_width=True)
-    col3.image(hpf_img, caption="3. 高通濾波 (HPF) 圖", use_column_width=True)
+    col1.image(gray, caption="1. 原始灰階圖", use_container_width=True)
+    col2.image(clahe_img, caption="2. CLAHE 增強圖", use_container_width=True)
+    col3.image(hpf_img, caption="3. 高通濾波 (HPF) 圖", use_container_width=True)
 
     # 4.3 提取 26 維 Uniform LBP 特徵
     radius = 3
